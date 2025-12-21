@@ -1,0 +1,17 @@
+{
+  "name": "chai-backend",
+  "version": "1.0.0",
+  "description": "a backend tutorial which helps me to learn backend topics",
+  "keywords": [
+    "javascipt",
+    "backend",
+    "chai"
+  ],
+  "license": "ISC",
+  "author": "Sumant Pandey",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
