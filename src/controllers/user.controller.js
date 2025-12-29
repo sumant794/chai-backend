@@ -413,6 +413,60 @@ const getUserChannelProfile = asyncHandler(async(req, res) => {
      )
 })
 
+const getWatchHistory = asyncHandler(async(req, res) => {
+     const user = await User.aggregate([
+          {
+               $match: {
+                    _id: new mongoose.Types.ObjectId(req.user._id) // yaha par mongoose kaam nahi karta hai to id ka direct conversion nahi hoga isliye aise id pass hoga
+               }
+          },
+          {
+               $lookup: {
+                    from: "videos",
+                    localField: "watchHistory",
+                    foreignField: "_id",
+                    as: "watchHistory",
+                    pipeline: [
+                         {
+                              $lookup: {
+                                   from: "users",
+                                   localField: "owner",
+                                   foreignField: "_id",
+                                   as: "owner",
+                                   pipeline: [
+                                        {
+                                             $project: {
+                                                  fullName: 1,
+                                                  username: 1,
+                                                  avatar: 1
+                                             }
+                                        }
+                                   ]
+                              }
+                         },
+                         {
+                              $addFields: {
+                                   owner: {  // owner field will be overwritten
+                                        $first: "$owner" // $first --> gives first element of array
+                                   }
+                              }
+                         }
+                    ]
+               }
+          }
+     ])
+
+     return res
+     .status(200)
+     .json(
+          new ApiResponse(
+               200,
+               user[0].watchHistory, // aggregation pipeline me se first value nikal ke deni padegi
+               "Watch history fetched successfully"
+          )
+     )
+})
+
 
 export {
      registerUser,
@@ -423,5 +477,6 @@ export {
      getCurrentUser,
      updateUserAvatar,
      updateUserCoverImage,
-     getUserChannelProfile
+     getUserChannelProfile,
+     getWatchHistory
 }
