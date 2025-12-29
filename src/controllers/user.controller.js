@@ -244,7 +244,11 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
 const getCurrentUser = asyncHandler(async(req, res) => {
      return res
      .status(200)
-     .json(200, req.user, "current user fetched succesfully")
+     .json(new ApiResponse(
+          200,
+          req.user, 
+          "current user fetched succesfully"
+     ))
 })
 
 const updateAccountDetails = asyncHandler(async(req, res) => {
@@ -254,7 +258,7 @@ const updateAccountDetails = asyncHandler(async(req, res) => {
           throw new ApiError(400, "All fields are required")
      }
 
-     const user = User.findByIdAndUpdate(
+     const user = await User.findByIdAndUpdate(
           req.user?._id,
           {
                $set: {
@@ -277,6 +281,9 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
      if(!avatarLocalPath){
           throw new ApiError(400,  "Avatar file is missing")
      }
+
+     // delete old image - assignment
+
      const avatar = await uploadOnCloudinary(avatarLocalPath)
 
      if(!avatar.url){
@@ -329,6 +336,83 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
      )
 })
 
+const getUserChannelProfile = asyncHandler(async(req, res) => {
+     const {username} = req.params
+
+     if(!username?.trim()){
+          throw new ApiError(400, "username is missing")
+     }
+
+     const channel = await User.aggregate([
+          // find the document first
+          {
+               $match: {
+                    username: username?.toLowerCase(),
+               }
+          },
+          // to get something from the document use $lookup
+          {
+               $lookup: {
+                    from: "subscriptions",
+                    localField:"_id",
+                    foreignField: "channel",
+                    as: "subscribers"
+               }
+          },
+          {
+               $lookup: {
+                    from: "subscriptions",
+                    localField:"_id",
+                    foreignField: "subscriber",
+                    as: "subscribedTo"
+               }
+          },
+          // jitna bhi field wo to rahega hi lekin or field add kar sakte hai using $addFields
+          {
+               $addFields: {
+                    subscribersCount : {
+                         $size: "$subscribers"  // $ --> ye sign aage laga hai ku ki subscribers ab ek field hai 
+                    },
+                    channelsSubscribedToCount: {
+                         $size: "$subscribedTo"
+                    },
+                    isSubscribed: {
+                         $cond: {
+                              if: {$in: [req.user?._id, "$subscribers.subscriber"]},
+                              then: true,
+                              else: false
+                         }
+                    }
+               }
+          },
+          // we use $project because it gives projection ki saari values ko nahi dunga , sirf selected chiz hi dunga
+          {
+               $project: {
+                    fullName: 1,
+                    username: 1,
+                    subscribersCount: 1,
+                    channelsSubscribedToCount: 1,
+                    isSubscribed: 1,
+                    avatar: 1,
+                    coverImage: 1,
+                    email: 1
+               }
+          }
+
+     ])
+     //console.log this channel
+
+     if(!channel?.length){
+          throw new ApiError(404, "Channel does not exists")
+     }
+
+     return res
+     .status(200)
+     .json(
+          new ApiResponse(200, channel[0], "User Channel Fetched Succesfully")
+     )
+})
+
 
 export {
      registerUser,
@@ -338,5 +422,6 @@ export {
      changeCurrentPassword,
      getCurrentUser,
      updateUserAvatar,
-     updateUserCoverImage
+     updateUserCoverImage,
+     getUserChannelProfile
 }
