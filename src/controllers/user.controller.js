@@ -157,8 +157,9 @@ const logoutUser = asyncHandler(async(req, res) => {
      await User.findByIdAndUpdate(
           req.user._id,
           {
-               $set: {
-                    refreshToken: undefined
+               $unset: {
+                   // refreshToken: undefined
+                   refreshToken: 1 // this removes the field from document
                }
           },
           {
@@ -305,6 +306,7 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
      .json(
           new ApiResponse(200, user, "Avatar Image updated  successfully")
      )
+
 })
 
 const updateUserCoverImage = asyncHandler(async(req, res) => {
