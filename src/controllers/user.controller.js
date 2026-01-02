@@ -1,9 +1,11 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/APiError.js"
 import {User} from "../models/user.model.js"
-import {uploadOnCloudinary} from "../utils/cloudinary.js"
+import {deleteFromCloudinary, uploadOnCloudinary} from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/APiResponse.js";
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose";
+
 
 
 
@@ -34,9 +36,10 @@ const registerUser = asyncHandler(async (req, res) => {
    // remove password and refersh token field from response
    // check for user creation 
    // return res
-    console.log("req.files 👉", req.files?.avatar?.[0]?.path);
+    //console.log("req.files 👉", req.files?.avatar?.[0]?.path);
+
     const {fullName, email, username, password} = req.body
-    console.log("email: ", email);
+    //console.log("email: ", email);
 
    /*if(fullName === ""){
         throw new ApiError(400, "fullname is required")
@@ -204,17 +207,18 @@ const refreshAccessToken = asyncHandler(async(req, res) => {
                secure: true
           }
      
-          const {accessToken, newRefreshToken}  = await generateAccessAndRefreshTokens(user._id)
+          const {accessToken, refreshToken}  = await generateAccessAndRefreshTokens(user._id)
+
      
           return res
           .status(200)
           .cookie("accessToken", accessToken, options)
-          .cookie("refreshToken", newRefreshToken, options)
+          .cookie("refreshToken", refreshToken, options)
           .json(
                new ApiResponse(
                     200,
                     {
-                         accessToken, refreshToken: newRefreshToken
+                         accessToken, refreshToken
                     },
                     "Access Token Refreshed"
                )
@@ -283,12 +287,17 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
           throw new ApiError(400,  "Avatar file is missing")
      }
 
-     // delete old image - assignment
 
      const avatar = await uploadOnCloudinary(avatarLocalPath)
 
      if(!avatar.url){
           throw new APiError(400, "Error while uploading avatar in cloudinary")
+     }
+
+     const oldAvatarUrl = req.user.avatar;
+     const deletedAvatar = await deleteFromCloudinary(oldAvatarUrl);
+     if(!deletedAvatar){
+          throw new Apierror( 400, "avatar not found" )
      }
 
      const user = await User.findByIdAndUpdate(
@@ -319,6 +328,13 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
 
      if(!coverImage.url){
           throw new APiError(400, "Error while uploading image in cloudinary")
+     }
+
+     const oldCoverImageUrl = req.user.coverImage;
+     const deletedOldCoverImageUrl = await deleteFromCloudinary(oldCoverImageUrl)
+     console.log(deletedOldCoverImageUrl)
+     if(!deletedOldCoverImageUrl){
+          throw new Apierror( 400, "coverImage not found" )
      }
 
      const user = await User.findByIdAndUpdate(
