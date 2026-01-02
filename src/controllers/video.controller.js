@@ -2,6 +2,8 @@ import { asyncHandler } from "../utils/asyncHandler.js"
 import { Video } from "../models/video.model.js"
 import mongoose from "mongoose"
 import { ApiResponse } from "../utils/APiResponse.js"
+import { ApiError } from "../utils/APiError.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
 //get all videos 
 
 
@@ -77,6 +79,65 @@ const getAllVideos = asyncHandler(async(req, res) => {
 
 })
 
+const addVideo = asyncHandler(async(req, res) => {
+    // get video details -> videoFile, thumbnail, title, description, duration, views
+    const {title, description, duration, views} = req.body;
+
+    if (!title || title.trim() === "") {
+        throw new ApiError(400, "Title is required");
+    }
+
+    if (!description || description.trim() === "") {
+        throw new ApiError(400, "Description should not be empty");
+    }
+
+    if (typeof duration !== "number" || duration <= 0) {
+        throw new ApiError(400, "Duration is not Valid")
+    }
+
+    if (typeof views !== "number" || views < 0) {
+        throw new ApiError(400, "Views is not Valid")
+    }
+
+    const videoFileLocalPath = req.files?.videoFile[0]?.path
+    if(!videoFileLocalPath){
+        throw new ApiError(400, "Video File is required")
+    }
+
+    const videoUrl = await uploadOnCloudinary(videoFileLocalPath)
+    if(!videoUrl){
+        throw new ApiError(400, "Something went wrong while uploading")
+    }
+
+    const thumbnailLocalPath = req.files?.thumbnail[0]?.path
+
+    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+
+    const video = await Video.create({
+        fileName: videoUrl.url,
+        thumbnail: thumbnail?.url || "",
+        title,
+        description,
+        duration,
+        views,
+        owner: new mongoose.Types.ObjectId(req.user._id)
+    })
+
+    const createdVideo = await Video.findById(video._id)
+
+    if(!createdVideo){
+        throw new ApiError(500, "Something went wrong while uploading video")
+    }
+
+    return res
+    .status(201)
+    .json(
+        new ApiResponse(200, createdVideo, "Video Uploaded Successfully")
+    )
+
+})
+
+
 // delete video 
 
 //add video to playlist
@@ -84,4 +145,7 @@ const getAllVideos = asyncHandler(async(req, res) => {
 
 
 
-export {getAllVideos}
+export {
+    getAllVideos,
+    addVideo
+}
