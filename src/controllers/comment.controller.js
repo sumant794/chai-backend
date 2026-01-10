@@ -64,9 +64,12 @@ const getVideoComments = asyncHandler(async(req, res) => {
 
     console.log(comments)
 
-    if(comments.length === 0){
-        new ApiResponse(200, [], "No Comments found")
+    if (comments.length === 0) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, [], "No Comments found"))
     }
+
 
     return res
     .status(200)
