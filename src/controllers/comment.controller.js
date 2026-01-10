@@ -93,7 +93,7 @@ const addComment = asyncHandler(async (req, res) => {
     if ( !isValidObjectId( videoId ) ){
         throw new ApiError( 400, {}, "Invalid video id" ) 
     }
-
+    // also check that if video exists or not
     const comment =  await Comment.create({
         content: content,
         video: videoId,
