@@ -8,6 +8,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 const createPlaylist = asyncHandler(async(req, res) => {
     const {name, description} = req.body
+    console.log(name)
+    console.log(description)
 
     if(!name && !description){
         throw new ApiError(400, "All fields are required")
@@ -18,9 +20,9 @@ const createPlaylist = asyncHandler(async(req, res) => {
         description,
         owner:req.user._id
     })
-
+    console.log(playlist)
     const createdPlaylist = await Playlist.findById(playlist._id)
-
+    console.log(createdPlaylist)
     if(!createdPlaylist){
         throw new ApiError(500, "Something went wrong while creating a playlist")
     }
@@ -35,7 +37,7 @@ const createPlaylist = asyncHandler(async(req, res) => {
 
 const getUserPlaylists = asyncHandler(async(req, res) => {
     const {userId} = req.params
-
+    console.log(userId)
     if(!mongoose.isValidObjectId(userId)){
         throw new ApiError(400, "Invalid UserId")
     }
@@ -85,7 +87,7 @@ const getUserPlaylists = asyncHandler(async(req, res) => {
             }
         }
     ])
-
+    console.log(userPlaylist)
     return res
     .status(200)
     .json(
@@ -96,9 +98,20 @@ const getUserPlaylists = asyncHandler(async(req, res) => {
 
 const getPlaylistById = asyncHandler(async(req, res) => {
     const {playlistId} = req.params
+    console.log(playlistId)
 
     if(!mongoose.isValidObjectId(playlistId)){
         throw new ApiError(400, "Invalid Playlist Id")
+    }
+
+    const existingPlaylist = await Playlist.findById(playlistId)
+    console.log(existingPlaylist)
+    if(!existingPlaylist){
+        return res
+        .status(200)
+        .json(
+            new ApiResponse(200, "Playlist does not exist")
+        )
     }
 
     const playlist = await Playlist.aggregate([
@@ -130,17 +143,18 @@ const getPlaylistById = asyncHandler(async(req, res) => {
                                 }
                             ]
                         }
+                    },
+                    {
+                        $addFields:{
+                            ownerDetails:{$first:"$ownerDetails"}
+                        }
                     }
                 ]
             }
-        },
-        {
-            $addFields:{
-                videoDetails:{$first:"$videoDetails"}
-            }
         }
+        
     ])
-
+    console.log(playlist)
     return res
     .status(200)
     .json(
@@ -150,6 +164,8 @@ const getPlaylistById = asyncHandler(async(req, res) => {
 
 const addVideoToPlaylist = asyncHandler(async(req, res) => {
     const {videoId, playlistId} = req.params
+    console.log(videoId)
+    console.log(playlistId)
 
     if(!(mongoose.isValidObjectId(videoId) && mongoose.isValidObjectId(playlistId))){
         throw new ApiError(400, "Invalid playlist id or video id")
@@ -159,6 +175,7 @@ const addVideoToPlaylist = asyncHandler(async(req, res) => {
     if(!playlist){
         throw new ApiError(400, "playlist not found for this playlist id")
     }
+    console.log(playlist)
 
     if(!playlist.owner.equals(req.user._id)){
         throw new ApiError(401, "User not authorized to access playlist")
@@ -168,15 +185,17 @@ const addVideoToPlaylist = asyncHandler(async(req, res) => {
     if(!video){
         throw new ApiError(400, "video not found")
     }
+    console.log(video)
 
     const updatedPlaylist = await Playlist.findByIdAndUpdate(
         playlistId,
         {
-            $push: { video: videoId }
+            $push: { videos: videoId }
 
         },
         {new:true}
     )
+    console.log(updatedPlaylist)
 
     if(!updatedPlaylist){
         throw new ApiError(500, "Something went wrong while adding video to playlist")
@@ -191,6 +210,8 @@ const addVideoToPlaylist = asyncHandler(async(req, res) => {
 
 const removeVideoFromPlaylist = asyncHandler(async(req, res) => {
     const {videoId, playlistId} = req.params
+    console.log(videoId)
+    console.log(playlistId)
 
     if(!(mongoose.isValidObjectId(videoId) && mongoose.isValidObjectId(playlistId))){
         throw new ApiError(400, "Invalid playlist id or video id")
@@ -200,6 +221,7 @@ const removeVideoFromPlaylist = asyncHandler(async(req, res) => {
     if(!playlist){
         throw new ApiError(400, "playlist not found for this playlist id")
     }
+    console.log(playlist)
 
     if(!playlist.owner.equals(req.user._id)){
         throw new ApiError(401, "User not authorized to access playlist")
@@ -209,16 +231,16 @@ const removeVideoFromPlaylist = asyncHandler(async(req, res) => {
     if(!video){
         throw new ApiError(400, "video not found")
     }
-
+    console.log(video)
     const updatedPlaylist = await Playlist.findByIdAndUpdate(
         playlistId,
         {
-            $pull: { video: videoId }
+            $pull: { videos: videoId }
 
         },
         {new:true}
     )
-
+    console.log(updatedPlaylist)
     if(!updatedPlaylist){
         throw new ApiError(500, "Something went wrong while removing video from playlist")
     }
@@ -264,6 +286,9 @@ const deletePlaylist = asyncHandler(async(req, res) => {
 const updatePlaylist = asyncHandler(async(req, res) => {
     const {playlistId} = req.params
     const{name, description} = req.body
+    console.log(playlistId)
+    console.log(name)
+    console.log(description)
 
     if(!mongoose.isValidObjectId(playlistId)){
         throw new ApiError(400, "Invalid playlist id")
@@ -277,6 +302,7 @@ const updatePlaylist = asyncHandler(async(req, res) => {
     if(!playlist){
         throw new ApiError(400, "playlist not found for this playlist id")
     }
+    console.log(playlist)
 
     if(!playlist.owner.equals(req.user._id)){
         throw new ApiError(401, "User not authorized to access playlist")
@@ -294,7 +320,7 @@ const updatePlaylist = asyncHandler(async(req, res) => {
         },
         {new:true}
     )
-
+    console.log(updatedPlaylist)
     if(!updatedPlaylist){
         throw new ApiError(500, "Something went wrong while updating playlist")
     }

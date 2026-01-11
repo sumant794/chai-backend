@@ -113,14 +113,14 @@ const toggleTweetLike = asyncHandler(async(req, res) => {
     }
 
     const existingLike = await Like.findOne(
-        {tweet:tweetId, owner:req.user._id }
+        {tweet:tweetId, likedBy:req.user._id }
     )
     console.log(existingLike)
 
     if(!existingLike){
         const like = await Like.create({
             tweet:tweetId,
-            owner:req.user._id 
+            likedBy:req.user._id 
         })
         console.log(like)
 
@@ -131,12 +131,12 @@ const toggleTweetLike = asyncHandler(async(req, res) => {
         console.log(createdLike)
         return res
         .status(201)
-        json(
+        .json(
             new ApiResponse(201, createdLike, "Tweet liked!!")
         )
     }else{
         const deletedLike = await Like.findOneAndDelete(
-            {tweet:tweetId, owner:req.user._id}
+            {tweet:tweetId, likedBy:req.user._id}
         )
         console.log(deletedLike)
         if(!deletedLike){
