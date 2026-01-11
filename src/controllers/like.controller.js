@@ -7,7 +7,7 @@ import { ApiResponse } from "../utils/APiResponse.js";
 
 const toggleVideoLike = asyncHandler(async(req, res) => {
     const { videoId } = req.params
-
+    console.log(videoId)
     if(!mongoose.isValidObjectId(videoId)){
         throw new ApiError(400, "Invalid video id")
     }
@@ -15,6 +15,7 @@ const toggleVideoLike = asyncHandler(async(req, res) => {
     const existingLike = await Like.findOne(
         { video:videoId, likedBy:req.user._id }
     )
+    console.log(existingLike)
 
     if(!existingLike){
         const like = await Like.create({
@@ -22,7 +23,11 @@ const toggleVideoLike = asyncHandler(async(req, res) => {
             likedBy: req.user._id
         })
 
+        console.log(like)
+
         const createdLike = await Like.findById(like._id)
+        console.log(createdLike)
+
         if(!createdLike){
             throw new ApiError(500, "Something went wrong while creating like")
         }
@@ -33,9 +38,8 @@ const toggleVideoLike = asyncHandler(async(req, res) => {
             new ApiResponse(201, createdLike, "Like added Successfully")
         )
     }else{
-        const deletedLike = await Like.findByIdAndDelete(
-            { video:videoId, likedBy:req.user._id }
-        )
+        const deletedLike = await Like.findOneAndDelete({likedBy:req.user._id})
+        console.log(deletedLike)
 
         if(!deletedLike){
             throw new ApiError(500, "Something went wrong while deleting like")
@@ -53,6 +57,7 @@ const toggleVideoLike = asyncHandler(async(req, res) => {
 
 const toggleCommentLike = asyncHandler(async(req, res) => {
     const { commentId } = req.params
+    console.log(commentId)
 
     if(!mongoose.isValidObjectId(commentId)){
         throw new ApiError(400, "Invalid Comment Id")
@@ -61,18 +66,21 @@ const toggleCommentLike = asyncHandler(async(req, res) => {
     const existingLike = await Like.findOne(
         {comment: commentId, likedBy: req.user._id}
     )
+    console.log(existingLike)
 
     if(!existingLike){
         const like = await Like.create({
             comment:commentId,
             likedBy:req.user._id
         })
+        console.log(like)
 
         const createdLike = await Like.findById(like._id)
         if(!createdLike){
             throw new ApiError(500, "Something went wrong while creating like for comment")
         }
 
+        console.log(createdLike)
         return res
         .status(201)
         .json(
@@ -82,7 +90,7 @@ const toggleCommentLike = asyncHandler(async(req, res) => {
         const deletedLike = await Like.findOneAndDelete(
             {comment: commentId, likedBy: req.user._id}
         )
-
+        console.log(deletedLike)
         if(!deletedLike){
             throw new ApiError(500, "Something went wrong while removing like from comment")
         }
@@ -98,6 +106,7 @@ const toggleCommentLike = asyncHandler(async(req, res) => {
 
 const toggleTweetLike = asyncHandler(async(req, res) => {
     const { tweetId } = req.params
+    console.log(tweetId)
 
     if(!mongoose.isValidObjectId(tweetId)){
         throw new ApiError(400, "Invalid tweeet Id")
@@ -106,18 +115,20 @@ const toggleTweetLike = asyncHandler(async(req, res) => {
     const existingLike = await Like.findOne(
         {tweet:tweetId, owner:req.user._id }
     )
+    console.log(existingLike)
 
     if(!existingLike){
         const like = await Like.create({
             tweet:tweetId,
             owner:req.user._id 
         })
+        console.log(like)
 
         const createdLike = await Like.findById(like._id)
         if(!createdLike){
             throw new ApiError(500, "Something went wrong while creating like for tweet")
         }
-
+        console.log(createdLike)
         return res
         .status(201)
         json(
@@ -127,7 +138,7 @@ const toggleTweetLike = asyncHandler(async(req, res) => {
         const deletedLike = await Like.findOneAndDelete(
             {tweet:tweetId, owner:req.user._id}
         )
-
+        console.log(deletedLike)
         if(!deletedLike){
             throw new ApiError(500, "Something went wrong while removing like from tweet")
         }
@@ -173,6 +184,7 @@ const getLikedVideos = asyncHandler(async(req, res) => {
         }
 
     ])
+    console.log(likedVideos)
 
     if (likedVideos.length === 0) {
     return res
