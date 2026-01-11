@@ -2,6 +2,7 @@ import mongoose, {isValidObjectId} from "mongoose";
 import { Video } from "../models/video.model.js";
 import { Subscription } from "../models/subscription.model.js";
 import { Like } from "../models/like.model.js";
+import { Comment } from "../models/comment.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/APiError.js";
 import { ApiResponse } from "../utils/APiResponse.js";
@@ -10,12 +11,13 @@ const getChannelStats = asyncHandler(async(req, res) => {
     // TODO: Get the channel stats like total video views, total subscribers, total videos, total likes etc.
     const {channelId} = req.query
     
-    if(!mongoose.isValidObjectId(channelId)){
+    const channel = channelId || req.user._id
+    console.log(channel)
+
+    if(!mongoose.isValidObjectId(channel)){
         throw new ApiError(400, "Inavlid channelId")
     }
-
-    const channel = channelId || req.user._id
-
+    // give a response if no stats for channel, like, comment etc found!
     const videoStats = await Video.aggregate([
         {
             $match:{
@@ -30,8 +32,9 @@ const getChannelStats = asyncHandler(async(req, res) => {
             }
         }
     ])
+    console.log(videoStats)
 
-    const susbcriberStats = await Subscription.aggregate([
+    const subscriberStats = await Subscription.aggregate([
         {
             $match:{
                 channel:new mongoose.Types.ObjectId(channel)
@@ -45,10 +48,13 @@ const getChannelStats = asyncHandler(async(req, res) => {
         }
     ])
 
+    console.log(subscriberStats)
+
     const videoIds = await Video.find(
         {owner:channel},
         {_id:1}
     )
+    console.log(videoIds)
 
     const totalLikesOnVideos = await Like.aggregate([
         {
@@ -60,11 +66,13 @@ const getChannelStats = asyncHandler(async(req, res) => {
             $count: "totalVideoLikes"
         }
     ])
+    console.log(totalLikesOnVideos)
 
     const commentIds = await Comment.find(
         {owner:channel},
         {_id: 1}
     )
+    console.log(commentIds)
 
     const totalLikesOnComments = await Like.aggregate([
         {
@@ -76,11 +84,13 @@ const getChannelStats = asyncHandler(async(req, res) => {
             $count: "totalCommentLikes"
         }
     ])
+    console.log(totalLikesOnComments)
 
     const tweetIds = await Comment.find(
         {owner:channel},
         {_id: 1}
     )
+    console.log(tweetIds)
 
     const totalLikesOnTweets = await Like.aggregate([
         {
@@ -92,11 +102,13 @@ const getChannelStats = asyncHandler(async(req, res) => {
             $count: "totalTweetLikes"
         }
     ])
+    console.log(totalLikesOnTweets)
+    const totalLikes = totalLikesOnVideos[0].totalVideoLikes + totalLikesOnComments[0].totalCommentLikes + totalLikesOnTweets[0].totalTweetLikes
 
     return res
     .status(200)
     .json(
-        new ApiResponse(200, totalLikesOnVideos, "Total Likes fetched Successfully")
+        new ApiResponse(200, {totalLikes:totalLikes, videoStats, subscriberStats},"Total Likes fetched Successfully")
     )
 
 })
@@ -104,20 +116,22 @@ const getChannelStats = asyncHandler(async(req, res) => {
 const getChannelVideos = asyncHandler(async(req, res) => {
     const {channelId} = req.query
     
-    if(!mongoose.isValidObjectId(channelId)){
+    const channel = channelId || req.user._id
+    console.log(channel)
+
+    if(!mongoose.isValidObjectId(channel)){
         throw new ApiError(400, "Inavlid channelId")
     }
-
-    const channel = channelId || req.user._id
 
     const channelVideos = await Video.aggregate([
         {
             $match:{
                 owner:new mongoose.Types.ObjectId(channel)
             }
-        }
+        } 
     ])
-
+    //give a resposnse if no video found
+    console.log(channelVideos)
     return res
     .status(200)
     .json(
